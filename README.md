@@ -1,5 +1,4 @@
-
-   <br>
+<br>
 📒 AI Bookkeeping Assistant for SMEs
 <br>
 Overview
