@@ -79,5 +79,17 @@ Our solution reduces the complexity of bookkeeping by making financial managemen
 
 
 <br><br>
+<div align="center">
+</div>
+Run and deploy your AI Studio app
+This contains everything you need to run your app locally.
+View your app in AI Studio: https://ai.studio/apps/65fd6378-7ba3-45f2-b714-d4607e89d986
+Run Locally
+Prerequisites:  Node.js
 
+Install dependencies:
+`npm install`
+Set the `GEMINI_API_KEY` in .env.local to your Gemini API key
+Run the app:
+`npm run dev`
 
