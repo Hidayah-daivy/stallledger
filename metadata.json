@@ -1,0 +1,6 @@
+{
+  "name": "Stall Ledger",
+  "description": "AI-powered voice bookkeeping for street vendors",
+  "requestFramePermissions": ["microphone", "camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

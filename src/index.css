@@ -1,0 +1,29 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;900&family=Noto+Sans+SC:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-serif: "Noto Serif SC", serif;
+  --font-sans: "Noto Sans SC", sans-serif;
+  --font-mono: "Space Mono", monospace;
+  
+  --color-ink: #2b241c;
+  --color-paper: #f5ead2;
+  --color-paper2: #efe0bf;
+  --color-paper3: #e7d5ac;
+  --color-stall-red: #c1432a;
+  --color-stall-red-dim: #e7c3b8;
+  --color-jade: #3f7d5c;
+  --color-jade-dim: #c7dcd0;
+  --color-coin: #c9962f;
+  --color-line: #cdb98c;
+}
+
+@layer base {
+  body {
+    background: radial-gradient(1200px 600px at 50% -200px, #fbf3de 0%, var(--color-paper) 55%);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+}
