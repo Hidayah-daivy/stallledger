@@ -7,11 +7,12 @@ import { ImagePlus, X } from 'lucide-react';
 
 interface ConfirmCardProps {
   pendingTx: Partial<Transaction>;
+  catalog?: {item: string, price: number, cost: number}[];
   onCancel: () => void;
   onSave: (tx: Transaction) => void;
 }
 
-export default function ConfirmCard({ pendingTx, onCancel, onSave }: ConfirmCardProps) {
+export default function ConfirmCard({ pendingTx, catalog, onCancel, onSave }: ConfirmCardProps) {
   const [type, setType] = useState(pendingTx.type || 'sale');
   const [date, setDate] = useState(todayStr());
   const [item, setItem] = useState(pendingTx.item || '');
@@ -34,6 +35,17 @@ export default function ConfirmCard({ pendingTx, onCancel, onSave }: ConfirmCard
     setNote(pendingTx.note || '');
     setImageUrl(pendingTx.imageUrl || null);
   }, [pendingTx]);
+
+  // Auto-fill price and cost when typing a known item
+  useEffect(() => {
+    if (type !== 'sale' || !catalog || catalog.length === 0 || !item) return;
+    const itemLower = item.toLowerCase();
+    const match = catalog.find(c => itemLower === c.item.toLowerCase());
+    if (match) {
+      setSell(prev => (prev === '' || Number(prev) === 0) ? match.price : prev);
+      setCost(prev => (prev === '' || Number(prev) === 0) ? match.cost : prev);
+    }
+  }, [item, catalog, type]);
 
   const handleSave = (e?: React.FormEvent) => {
     e?.preventDefault();

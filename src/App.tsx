@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import RecordView from './components/RecordView';
 import ReportView from './components/ReportView';
+import MenuView from './components/MenuView';
 import TaxView from './components/TaxView';
 import SettingsView from './components/SettingsView';
 import DashboardView from './components/DashboardView';
@@ -9,7 +10,7 @@ import { auth } from './lib/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'record' | 'reports' | 'tax' | 'settings'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'record' | 'menu' | 'reports' | 'tax' | 'settings'>('dashboard');
   const [user, setUser] = useState<User | null | undefined>(undefined);
   
   useEffect(() => {
@@ -29,6 +30,7 @@ export default function App() {
   const tabs = [
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'record', label: 'Core Business' },
+    { id: 'menu', label: 'Menu' },
     { id: 'reports', label: 'Reports' },
     { id: 'tax', label: 'Tax Filing' },
     { id: 'settings', label: 'Settings' }
@@ -80,6 +82,7 @@ export default function App() {
       <main className="flex-1 p-4 sm:p-6 max-w-[1400px] w-full mx-auto">
         {activeTab === 'dashboard' && <DashboardView />}
         {activeTab === 'record' && <RecordView />}
+        {activeTab === 'menu' && <MenuView />}
         {activeTab === 'reports' && <ReportView />}
         {activeTab === 'tax' && <TaxView />}
         {activeTab === 'settings' && <SettingsView />}

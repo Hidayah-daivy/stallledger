@@ -15,7 +15,7 @@ async function startServer() {
 
   app.post("/api/parse-transaction", async (req, res) => {
     try {
-      const { text, image } = req.body; // image can be base64 string
+      const { text, image, catalog } = req.body; // image can be base64 string
 
       if (!text && !image) {
         return res.status(400).json({ error: "Text or image is required" });
@@ -35,16 +35,25 @@ async function startServer() {
         });
       }
 
+      let catalogText = '';
+      if (catalog && Array.isArray(catalog) && catalog.length > 0) {
+        catalogText = `\nVendor Catalog/Menu:\n${catalog.map((c: any) => `- ${c.item}: Selling Price RM${c.price}, Cost RM${c.cost}`).join('\n')}\nIf the user input matches an item in this catalog, automatically use the exact catalog values for sellingPricePerUnit and costPricePerUnit.\n`;
+      }
+
       parts.push({
-        text: `You are a voice assistant for street vendors helping them record transactions. The user will describe a business income or expense (or upload a receipt), and you must parse it into structured JSON.
+        text: `You are a voice assistant for street vendors helping them record transactions. The user will describe a business income or expense (or upload a receipt), and you must parse it into structured JSON. If the user speaks in Malay (or mixed Malay/English), automatically translate the item name and context to English before generating the JSON.
+${catalogText}
+Speech-to-Text Correction:
+- The input might contain phonetic transcription errors (e.g., "google" instead of "noodle"). Correct these obvious mistakes based on the context of a food/retail stall before parsing.
+
 Rules:
 - If the user describes selling or receiving money, or if it's a sales receipt, type is "sale".
 - If the user describes buying, restocking, or spending money and it's not a direct sale, or if it's a purchase receipt, type is "expense".
-- "quantity" defaults to 1.
-- "sellingPricePerUnit": The selling price per unit. If they only said total revenue and quantity is 1, put the total here. (null if type is expense)
-- "costPricePerUnit": The cost per unit, if mentioned. (null if not mentioned or if type is expense)
+- "quantity" defaults to 1, but pay close attention to numbers mentioned before the item (e.g., "sold 20 fried noodle" means quantity is 20, "6 fried rice" means quantity is 6).
+- "sellingPricePerUnit": The selling price per unit. If the item matches the catalog, use the catalog's Selling Price. If they only said total revenue and quantity is 1, put the total here. (null if type is expense)
+- "costPricePerUnit": The cost per unit, if mentioned. If the item matches the catalog, use the catalog's Cost. (null if not mentioned or if type is expense)
 - "expenseAmount": The total expense amount. (null if type is sale)
-- "item": Name of the item or purpose, short.
+- "item": Name of the item or purpose, short. STRICTLY exclude the quantity number from the item name (e.g., if user says "6 fried rice", item should be "fried rice", NOT "6 fried rice").
 - "note": Brief notes, can be empty string.
 ${text ? `User input: ${text}` : `Extract from the provided image.`}`,
       });
@@ -101,10 +110,56 @@ ${text ? `User input: ${text}` : `Extract from the provided image.`}`,
       });
 
       const parsed = JSON.parse(response.text || "{}");
+      
+      // Cleanup fallback: If item starts with a number and quantity is 1, extract it
+      if (parsed.item && typeof parsed.item === 'string') {
+        const match = parsed.item.trim().match(/^(\d+)\s+(.+)$/);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          if (!isNaN(num) && (parsed.quantity === 1 || parsed.quantity == null)) {
+            parsed.quantity = num;
+            parsed.item = match[2];
+          } else if (!isNaN(num) && parsed.quantity === num) {
+            // AI extracted quantity but left it in the item name
+            parsed.item = match[2];
+          }
+        }
+      }
+
       res.json(parsed);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error parsing transaction:", error);
-      res.status(500).json({ error: "Failed to parse transaction" });
+      const msg = error?.status === 429 ? "Gemini API rate limit or quota exceeded. Please wait a moment or check your AI Studio billing." : "Failed to parse transaction";
+      res.status(500).json({ error: msg });
+    }
+  });
+
+  app.post("/api/ai-chat", async (req, res) => {
+    try {
+      const { query, context } = req.body;
+      if (!query) return res.status(400).json({ error: "Query is required" });
+
+      const contextDataStr = context ? JSON.stringify(context, null, 2) : "No data available.";
+      const prompt = `You are an AI business assistant for a street vendor/stall owner. 
+They have asked you a question about their business or their data.
+
+Current Month's Transactions Data:
+${contextDataStr}
+
+User Question: ${query}
+
+Provide a helpful, concise answer based on their data. If the data is empty, give general business advice.
+Keep your response short, direct, and formatted in plain text (no markdown formatting if possible, just text).`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: prompt,
+      });
+
+      res.json({ answer: response.text || "I'm not sure how to answer that." });
+    } catch (error: any) {
+      console.error("Error in ai-chat:", error);
+      res.status(500).json({ error: "Failed to generate answer" });
     }
   });
 

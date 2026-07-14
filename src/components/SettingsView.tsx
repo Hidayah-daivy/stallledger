@@ -71,7 +71,7 @@ export default function SettingsView() {
               <label className="block text-xs font-bold text-ink uppercase tracking-widest mb-1">Business Name</label>
               <input 
                 type="text" 
-                value={settings.companyName}
+                value={settings.companyName || ''}
                 onChange={e => setSettings({...settings, companyName: e.target.value})}
                 className="w-full bg-[#f8f5ee] border-[3px] border-ink rounded-lg px-4 py-2 text-sm font-bold focus:outline-none focus:bg-white"
               />
@@ -80,7 +80,7 @@ export default function SettingsView() {
               <label className="block text-xs font-bold text-ink uppercase tracking-widest mb-1">Tax ID / SSM</label>
               <input 
                 type="text" 
-                value={settings.taxId}
+                value={settings.taxId || ''}
                 onChange={e => setSettings({...settings, taxId: e.target.value})}
                 className="w-full bg-[#f8f5ee] border-[3px] border-ink rounded-lg px-4 py-2 text-sm font-bold focus:outline-none focus:bg-white"
               />
@@ -88,7 +88,7 @@ export default function SettingsView() {
             <div>
               <label className="block text-xs font-bold text-ink uppercase tracking-widest mb-1">Address</label>
               <textarea 
-                value={settings.companyAddress}
+                value={settings.companyAddress || ''}
                 onChange={e => setSettings({...settings, companyAddress: e.target.value})}
                 className="w-full bg-[#f8f5ee] border-[3px] border-ink rounded-lg px-4 py-2 text-sm font-bold focus:outline-none focus:bg-white min-h-[80px]"
               />

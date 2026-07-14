@@ -3,13 +3,28 @@ import { Transaction } from '../types';
 import { listMonthKeys, loadMonth } from '../lib/storage';
 import { fmt, todayStr } from '../lib/utils';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { Lightbulb } from 'lucide-react';
+import DashboardAIChat from './DashboardAIChat';
 
 export default function DashboardView() {
   const [recentTxs, setRecentTxs] = useState<Transaction[]>([]);
   const [monthlyData, setMonthlyData] = useState<any[]>([]);
   const [metrics, setMetrics] = useState({ revenue: 0, profit: 0, txCount: 0 });
+  const [tip, setTip] = useState('');
+
+  const tips = [
+    "Keep personal and business money separate to make accounting easier.",
+    "Review your best-selling items weekly and ensure you have enough stock.",
+    "Record all expenses, no matter how small. They add up quickly!",
+    "Track your peak hours to schedule your prep time efficiently.",
+    "A clean stall attracts more customers. Dedicate 10 minutes at closing to clean up.",
+    "Always count your float (starting cash) before opening to avoid mistakes later.",
+    "Consistent pricing and clear menus help customers make quicker decisions."
+  ];
 
   useEffect(() => {
+    setTip(tips[Math.floor(Math.random() * tips.length)]);
+    
     async function loadData() {
       const keys = await listMonthKeys();
       keys.sort((a, b) => b.localeCompare(a));
@@ -120,6 +135,23 @@ export default function DashboardView() {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Stall Tip Card */}
+      <div className="bg-[#f8f5ee] border-[3px] border-ink rounded-2xl p-6 shadow-[6px_6px_0_var(--color-ink)] mt-2">
+        <div className="flex items-start gap-4">
+          <div className="bg-[#e4d5b7] text-ink w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 border-[2px] border-ink">
+            <Lightbulb size={20} />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-ink uppercase tracking-widest mb-1">Stall Tip</h3>
+            <p className="text-[#8a7a56] font-bold text-sm">{tip}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-2 h-[500px]">
+        <DashboardAIChat />
       </div>
     </div>
   );

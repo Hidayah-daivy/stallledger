@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { Transaction } from '../types';
-import { loadMonth, saveTransaction, uploadImage, listenToToday } from '../lib/storage';
+import { Transaction, UserSettings } from '../types';
+import { loadMonth, saveTransaction, uploadImage, listenToToday, loadSettings } from '../lib/storage';
 import { fmt, todayStr, monthKeyOf } from '../lib/utils';
 import ConfirmCard from './ConfirmCard';
 import LedgerList from './LedgerList';
@@ -14,11 +14,14 @@ export default function RecordView() {
   const [textInput, setTextInput] = useState('');
   const [pendingTx, setPendingTx] = useState<Partial<Transaction> | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [settings, setSettings] = useState<UserSettings | null>(null);
   
   const recognitionRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    loadSettings().then(s => setSettings(s));
+    
     const unsubscribe = listenToToday((txs) => {
       setTodayTx(txs);
     });
@@ -27,7 +30,7 @@ export default function RecordView() {
     const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRec) {
       const rec = new SpeechRec();
-      rec.lang = 'en-US';
+      rec.lang = navigator.language || 'en-MY';
       rec.continuous = false;
       rec.interimResults = true;
       rec.onresult = (e: any) => {
@@ -85,6 +88,7 @@ export default function RecordView() {
       const payload: any = {};
       if (text) payload.text = text;
       if (imageBase64) payload.image = imageBase64;
+      if (settings?.catalog) payload.catalog = settings.catalog;
 
       const res = await fetch('/api/parse-transaction', {
         method: 'POST',
@@ -92,11 +96,32 @@ export default function RecordView() {
         body: JSON.stringify(payload)
       });
       const parsed = await res.json();
+      
+      if (!res.ok || parsed.error) {
+        throw new Error(parsed.error || 'Failed to parse transaction');
+      }
+      
+      if (settings?.catalog && parsed.item) {
+        // fuzzy match item name
+        const parsedItemLower = parsed.item.toLowerCase();
+        const matchedItem = settings.catalog.find((c: any) => 
+          parsedItemLower.includes(c.item.toLowerCase()) || 
+          c.item.toLowerCase().includes(parsedItemLower)
+        );
+        if (matchedItem) {
+          if (parsed.sellingPricePerUnit == null) parsed.sellingPricePerUnit = matchedItem.price;
+          if (parsed.costPricePerUnit == null) parsed.costPricePerUnit = matchedItem.cost;
+          // also ensure we use the canonical catalog name if it's very close
+          parsed.item = matchedItem.item;
+        }
+      }
+
       if (imageBase64) {
         parsed.imageUrl = imageBase64;
       }
       setPendingTx(parsed);
-    } catch (e) {
+    } catch (e: any) {
+      alert(`AI Parsing Error: ${e.message}. Please enter manually.`);
       setPendingTx({
         type: 'sale',
         item: text ? text.slice(0, 20) : 'Receipt Item',
@@ -253,7 +278,9 @@ export default function RecordView() {
         <div className="flex-1 bg-white border-[3px] border-ink rounded-2xl shadow-[6px_6px_0_var(--color-ink)] flex flex-col min-h-[300px] overflow-hidden">
           <div className="bg-ink text-white px-6 py-4 flex items-center justify-between">
             <h2 className="text-sm font-black uppercase tracking-widest">Today's Ledger</h2>
-            <span className="text-xs font-bold opacity-80">{todayTx.length} TRANSACTIONS</span>
+            <div className="flex items-center gap-4">
+              <span className="text-xs font-bold opacity-80">{todayTx.length} TRANSACTIONS</span>
+            </div>
           </div>
           
           <div className="p-6 flex-1 overflow-y-auto">
@@ -261,6 +288,7 @@ export default function RecordView() {
               <div className="mb-6">
                 <ConfirmCard
                   pendingTx={pendingTx}
+                  catalog={settings?.catalog || []}
                   onCancel={() => setPendingTx(null)}
                   onSave={handleConfirmSave}
                 />

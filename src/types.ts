@@ -36,4 +36,5 @@ export interface UserSettings {
   currency: string;
   taxId: string;
   role: string;
+  catalog?: { item: string; price: number; cost: number }[];
 }
